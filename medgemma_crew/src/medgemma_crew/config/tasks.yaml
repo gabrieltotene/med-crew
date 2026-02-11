@@ -1,17 +1,35 @@
-research_task:
+radiology_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
+    Receive an image of an X-ray. Your goal is to analyze the \
+    structure of the X-ray and locate possible "anomalies". \
+    These anomalies will be treated as pulmonary problems.
+
+    review image: '''{image_url}'''
+
   expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    Format your response in JSON with "Anomaly" (true or false), "Located" (where you found the anomaly), and "Description" (what you found).
+  agent: radiologist
 
 reporting_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Review the context you got and expand each topic into a full section for a report. \
+    Make sure the report is detailed and contains any and all relevant information. \
+    Perform a technical analysis and return a possible pulmonary problem and what is the probability that this is the problem. \
+    Ex: pneumonia, pulmonary embolism, etc.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
+    Format your response in JSON with "Technical Analysis" (a detailed technical analysis of the X-ray), and "Possible Pulmonary Problem" (the most likely pulmonary \ problem based on the analysis) + "Probability" (the probability that this is the problem).
   agent: reporting_analyst
+
+circle_radiography_task:
+  description: >
+    Take the tool '''circle_the_anomaly''' and circle:
+    - lung problems mentioned
+    - spots
+    - secretions
+
+    If you can't find anything, stop there and say you didn't find anything.
+  
+  expected_output: >
+    Return the image with the circles of the anomalies.
+  
+  agent: anomaly_analyst

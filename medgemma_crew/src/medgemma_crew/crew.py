@@ -30,6 +30,7 @@ class MedgemmaCrew():
         return Agent(
             config=self.agents_config['researcher'], # type: ignore[index]
             verbose=True,
+            multimodal=True, # In case you want to use multimodal capabilities
             llm=self.llm
         )
 
@@ -37,6 +38,14 @@ class MedgemmaCrew():
     def reporting_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['reporting_analyst'], # type: ignore[index]
+            verbose=True,
+            llm=self.llm
+        )
+
+    @agent
+    def anomaly_analyst(self) -> Agent:
+        return Agent(
+            config=self.agents_config['anomaly_analyst'], # type: ignore[index]
             verbose=True,
             llm=self.llm
         )
@@ -54,7 +63,12 @@ class MedgemmaCrew():
     def reporting_task(self) -> Task:
         return Task(
             config=self.tasks_config['reporting_task'], # type: ignore[index]
-            output_file='report.md'
+        )
+    
+    @task
+    def circle_radiography_task(self) -> Task:
+        return Task(
+            config=self.tasks_config["circle_radiography_task"], # type: ignore[index]
         )
 
     @crew
