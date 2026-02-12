@@ -1565,10 +1565,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "crewai", extra = ["tools"] },
+    { name = "pillow" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "crewai", extras = ["tools"], specifier = ">=0.165.1,<1.0.0" }]
+requires-dist = [
+    { name = "crewai", extras = ["tools"], specifier = ">=0.165.1,<1.0.0" },
+    { name = "pillow", specifier = ">=12.1.1" },
+]
 
 [[package]]
 name = "mmh3"

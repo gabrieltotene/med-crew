@@ -17,9 +17,11 @@ def run():
     """
     Run the crew.
     """
+
+    img = "/home/lucas.abner/Documentos/code/med-crew/plot_gpt.png"
+
     inputs = {
-        'topic': 'AI LLMs',
-        'current_year': str(datetime.now().year)
+        'image_url': img
     }
     
     try:

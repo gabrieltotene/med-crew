@@ -1,18 +1,34 @@
 radiology_task:
   description: >
-    Receive an image of an X-ray. Your goal is to analyze the \
-    structure of the X-ray and locate possible "anomalies". \
-    These anomalies will be treated as pulmonary problems.
-
-    review image: '''{image_url}'''
+    Analyze this X-ray image for anomalies using the 'openai_image_tool'.
+    
+    Image path: {image_url}
+    
+    Look for:
+    - Lung problems
+    - Spots or lesions
+    - Secretions
+    - Any structural abnormalities
+    
+    If you cannot access the image, describe what information you would need.
+    
+    **RETURN ONLY THE JSON, DO NOT EXPLAIN ANYTHING ELSE.**
 
   expected_output: >
-    Format your response in JSON with "Anomaly" (true or false), "Located" (where you found the anomaly), and "Description" (what you found).
+      Format your response in
+      {
+        "anomaly": boolean,
+        "located": string,
+        "description": string
+      }
+      
+    # JSON with: "anomaly" (true/false), "located" (where), "description" (what you found)
+  
   agent: radiologist
 
 reporting_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report. \
+    Analyze the context of the "radiologist" agent you obtained and develop each topic into a complete section for the report. \
     Make sure the report is detailed and contains any and all relevant information. \
     Perform a technical analysis and return a possible pulmonary problem and what is the probability that this is the problem. \
     Ex: pneumonia, pulmonary embolism, etc.
