@@ -18,7 +18,7 @@ def run():
     Run the crew.
     """
 
-    img = "/home/lucas.abner/Documentos/code/med-crew/plot_gpt.png"
+    img = "/home/lucas.abner/Documentos/code/med-crew/raio-x.jpeg"
 
     inputs = {
         'image_url': img

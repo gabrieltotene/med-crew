@@ -3,7 +3,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 from pydantic import BaseModel
-from .tools.custom_tool import OpenAIImageTool
+from .tools.custom_tool import OpenAIImageTool, CircleTheAnomalyTool
 
 # If you want to run a snippet of code before or after the crew starts,
 # you can use the @before_kickoff and @after_kickoff decorators
@@ -89,6 +89,7 @@ class MedgemmaCrew():
         return Task(
             config=self.tasks_config["circle_radiography_task"], # type: ignore[index]
             context=[self.radiology_task()],
+            tools=[CircleTheAnomalyTool()],
         )
 
     @crew

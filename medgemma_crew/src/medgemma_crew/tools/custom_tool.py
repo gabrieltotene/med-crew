@@ -19,21 +19,19 @@ class OpenAIImageTool(BaseTool):
     name: str = "openai_image_tool"
     description: str = (
         "Analyzes X-ray images. "
-        "Input: image_url (string) - path to the image file. "
-        "Example: {'image_url': '/home/lucas.abner/Documentos/code/med-crew/plot_gpt.png'}"
+        "Input: image_url (string) - Path to the image file, provided in the task description. "
     )
     args_schema: Type[BaseModel] = OpenAIImageInput
 
     def _run(self, image_url: str, prompt: Optional[str]) -> str:
         """Analyzes an image and returns description."""
-        img = "/home/lucas.abner/Documentos/code/med-crew/raio-x.jpeg"
-
-        def encode_base64(img):
-            with open(img, "rb") as image_file:
+        print(f"Received image URL: {image_url}")
+        def encode_base64(image_url: str) -> str:
+            with open(image_url, "rb") as image_file:
                 return base64.b64encode(image_file.read()).decode("utf-8")
 
         print('Encoding image...')
-        img_base64 = encode_base64(img)
+        img_base64 = encode_base64(image_url)
         print(f'Image encoded: {len(img_base64)} characters')
 
         # Mensagens no formato correto
@@ -82,15 +80,21 @@ class OpenAIImageTool(BaseTool):
 class CircleTheAnomalyTool(BaseTool):
     name: str = "circle_the_anomaly"
     description: str = "A tool to circle anomalies in X-ray images, such as lung problems, spots, and secretions. If no anomalies are found, it should indicate that as well."
-    input_schema: Type[BaseModel] = CircleTheAnomalyInput
+    args_schema: Type[BaseModel] = CircleTheAnomalyInput
 
-    def _execute(self, input: CircleTheAnomalyInput) -> str:
+    def _run(self, input: CircleTheAnomalyInput) -> str:
         """This is a placeholder implementation. In a real-world scenario, this method would contain the logic to analyze the X-ray image and circle the anomalies. For demonstration purposes, it simply returns a message indicating that the tool has been executed."""
 
         img = Image.open(input.image_url)
 
-        draw = ImageDraw(img)
+        # Cria o objeto de desenho
+        draw = ImageDraw.Draw(img)  # ✅ Use ImageDraw.Draw()
 
+        # Desenha um círculo vermelho
         draw.ellipse((input.locations[0]['x1'], input.locations[0]['y1'], input.locations[0]['x2'], input.locations[0]['y2']), outline='red', width=5)
 
-        return {"message": "Anomalies circled successfully."}
+        # Salva a imagem modificada
+        output_path = "/home/lucas.abner/Documentos/code/med-crew/raio-x_annotated.jpeg"
+        img.save(output_path)
+
+        return f"Imagem salva em: {output_path}"
