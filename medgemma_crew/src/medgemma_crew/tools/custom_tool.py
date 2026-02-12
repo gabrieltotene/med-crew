@@ -82,10 +82,10 @@ class CircleTheAnomalyTool(BaseTool):
     description: str = "A tool to circle anomalies in X-ray images, such as lung problems, spots, and secretions. If no anomalies are found, it should indicate that as well."
     args_schema: Type[BaseModel] = CircleTheAnomalyInput
 
-    def _run(self, input: CircleTheAnomalyInput) -> str:
+    def _run(self, image_url: str, locations: list[dict]) -> str:
         """This is a placeholder implementation. In a real-world scenario, this method would contain the logic to analyze the X-ray image and circle the anomalies. For demonstration purposes, it simply returns a message indicating that the tool has been executed."""
 
-        img = Image.open(input.image_url)
+        img = Image.open(image_url)
 
         # Cria o objeto de desenho
         draw = ImageDraw.Draw(img)  # ✅ Use ImageDraw.Draw()
