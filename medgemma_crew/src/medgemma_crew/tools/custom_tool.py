@@ -9,7 +9,7 @@ import requests
 
 class OpenAIImageInput(BaseModel):
     image_url: str = Field(..., description="The URL of the image to analyze.")
-    prompt: Optional[str] = Field(default="Analyze this X-ray for anomalies", description="The analysis prompt")
+    prompt: str = Field(default="Analyze this X-ray for anomalies", description="The analysis prompt")
 
 class CircleTheAnomalyInput(BaseModel):
     image_url: str = Field(..., description="The URL of the X-ray image to analyze.")
@@ -23,7 +23,7 @@ class OpenAIImageTool(BaseTool):
     )
     args_schema: Type[BaseModel] = OpenAIImageInput
 
-    def _run(self, image_url: str, prompt: Optional[str]) -> str:
+    def _run(self, image_url: str, prompt: str) -> str:
         """Analyzes an image and returns description."""
         print(f"Received image URL: {image_url}")
         def encode_base64(image_url: str) -> str:
@@ -43,7 +43,7 @@ class OpenAIImageTool(BaseTool):
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Describe this X-ray"},
+                    {"type": "text", "text": prompt},
                     {
                         "type": "image_url",
                         "image_url": {
@@ -60,7 +60,7 @@ class OpenAIImageTool(BaseTool):
             "model": "dale",
             "messages": messages,
             "max_tokens": 1000,
-            "temperature": 0.7
+            "temperature": 0.0
         }
 
         # ✅ CORRETO: Envia o payload
@@ -71,7 +71,10 @@ class OpenAIImageTool(BaseTool):
         if response.status_code == 200:
             result = response.json()
             print("\n=== RESPOSTA ===")
-            return result["choices"][0]["message"]["content"]
+
+            content = result["choices"][0]["message"]["content"]
+            return content
+
         else:
             print("\n=== ERRO ===")
             print(response.text)  # ✅ Mostra o erro completo
@@ -79,22 +82,61 @@ class OpenAIImageTool(BaseTool):
 
 class CircleTheAnomalyTool(BaseTool):
     name: str = "circle_the_anomaly"
-    description: str = "A tool to circle anomalies in X-ray images, such as lung problems, spots, and secretions. If no anomalies are found, it should indicate that as well."
+    description: str = (
+        "Draws red circles on X-ray images using normalized 0-1000 bounding boxes."
+        "Input: image_url (string) - Path to the image file, provided in the task description. "
+    )
     args_schema: Type[BaseModel] = CircleTheAnomalyInput
 
     def _run(self, image_url: str, locations: list[dict]) -> str:
-        """This is a placeholder implementation. In a real-world scenario, this method would contain the logic to analyze the X-ray image and circle the anomalies. For demonstration purposes, it simply returns a message indicating that the tool has been executed."""
 
-        img = Image.open(image_url)
+        if image_url.startswith("file://"):
+            image_url = image_url.replace("file://", "")
 
-        # Cria o objeto de desenho
-        draw = ImageDraw.Draw(img)  # ✅ Use ImageDraw.Draw()
+        if not image_url or not os.path.exists(image_url):
+            return f"Error: Image file not found at {image_url}"
 
-        # Desenha um círculo vermelho
-        draw.ellipse((input.locations[0]['x1'], input.locations[0]['y1'], input.locations[0]['x2'], input.locations[0]['y2']), outline='red', width=5)
+        img = Image.open(image_url).convert("RGB")
+        width, height = img.size
 
-        # Salva a imagem modificada
-        output_path = "/home/lucas.abner/Documentos/code/med-crew/raio-x_annotated.jpeg"
+        draw = ImageDraw.Draw(img)
+
+        if not locations or len(locations) == 0:
+            return "No locations provided."
+
+        for loc in locations:
+
+            # 🔒 Validação defensiva
+            if not all(k in loc for k in ["y1", "x1", "y2", "x2"]):
+                continue
+
+            ymin = int(loc["y1"])
+            xmin = int(loc["x1"])
+            ymax = int(loc["y2"])
+            xmax = int(loc["x2"])
+
+            # 🔒 Clamp de segurança
+            ymin = max(0, min(1000, ymin))
+            xmin = max(0, min(1000, xmin))
+            ymax = max(0, min(1000, ymax))
+            xmax = max(0, min(1000, xmax))
+
+            if ymin >= ymax or xmin >= xmax:
+                continue
+
+            # 📐 Conversão para pixel real
+            left = int(xmin * width / 1000)
+            right = int(xmax * width / 1000)
+            top = int(ymin * height / 1000)
+            bottom = int(ymax * height / 1000)
+
+            # 🎯 Desenha elipse
+            draw.ellipse([left, top, right, bottom], outline="red", width=5)
+
+        # 📁 Gera nome único
+        import uuid
+        output_path = f"/home/lucas.abner/Documentos/code/med-crew/raio-x_annotated_{uuid.uuid4().hex[:8]}.jpeg"
+
         img.save(output_path)
 
-        return f"Imagem salva em: {output_path}"
+        return output_path

@@ -1,51 +1,158 @@
-radiology_task:
+image_analysis_task:
   description: >
-    Analyze this X-ray image for anomalies using the 'openai_image_tool'.
-    
-    Image path: {image_url}
-    
-    Look for:
-    - Lung problems
-    - Spots or lesions
-    - Secretions
-    - Any structural abnormalities
-    
-    If you cannot access the image, describe what information you would need.
-    
-    **RETURN ONLY THE JSON, DO NOT EXPLAIN ANYTHING ELSE.**
+    Analyze the X-ray image at {image_url} using 'openai_image_tool'.
+
+    Tasks:
+
+    1. Identify visible pulmonary or thoracic anomalies.
+    2. For each anomaly, describe:
+       - Anatomical region (e.g., right mid-lung zone, left lower lobe)
+       - Relative position (upper/middle/lower, medial/lateral, central/peripheral)
+       - Estimated size (small, medium, large)
+       - Visual density (mild opacity, consolidation, nodule-like, etc.)
+
+    IMPORTANT:
+    - Do NOT provide numeric coordinates.
+    - Do NOT estimate bounding boxes.
+    - Focus only on medical visual interpretation.
+
+    OUTPUT RULES:
+    - Return ONLY valid JSON.
+    - No explanations outside JSON.
 
   expected_output: >
-      Format your response in
-      {
-        "anomaly": boolean,
-        "located": string,
-        "description": string
-      }
-      
-    # JSON with: "anomaly" (true/false), "located" (where), "description" (what you found)
-  
-  agent: radiologist
+    Return a JSON object with the following structure:
+    {{
+      "anomaly_found": boolean,
+      "anomalies": [
+        {
+          "label": "string",
+          "anatomical_region": "string",
+          "relative_position": "string",
+          "estimated_size": "string",
+          "visual_characteristics": "string",
+          "anomalies_here" : boolean,
+          "confidence": float
+        }
+      ],
+      "technical_description": "string"
+    }}
+
+  agent: image_interpreter
+
+localization_task:
+  description: >
+    Use 'xray_vision_tool' to VISUALLY INSPECT {image_url} and locate anomalies.
+    
+    **CRITICAL RADIOLOGICAL CONVENTION:**
+    - Chest X-rays are viewed as if facing the patient
+    - Patient's LEFT appears on the RIGHT side of the image
+    - Patient's RIGHT appears on the LEFT side of the image
+    - The "L" or "R" marker indicates PATIENT anatomy, not image sides
+    
+    **Your task:**
+    1. LOOK at the actual image using the tool
+    2. Find the visual anomaly (opacity, consolidation, nodule, etc.)
+    3. Measure its position in the image using this coordinate system:
+    
+    **Image Coordinate System (0-1000 scale):**
+    ```
+    Y-axis (vertical):          X-axis (horizontal):
+    0   = top of image          0    = left edge of image
+    250 = upper lung zones      300  = patient's RIGHT lung
+    500 = mid lung zones        500  = mediastinum/spine
+    750 = lower lung zones      700  = patient's LEFT lung  
+    1000= bottom of image       1000 = right edge of image
+    ```
+    
+    **Example coordinates:**
+    - Right upper lobe opacity: [200, 150, 400, 350]
+    - Left lower lobe consolidation: [600, 650, 850, 900]
+    - Central mediastinal mass: [300, 400, 600, 600]
+    
+    **IMPORTANT:**
+    - Bounding box should TIGHTLY fit the visible anomaly
+    - Small nodules: ~80-150 pixel range
+    - Medium opacities: ~200-350 pixel range
+    - Large consolidations: 400+ pixel range
+    
+    Return ONLY valid JSON. Coordinates must match what you SEE in the image.
+
+  expected_output: >
+    {{
+      "anomaly_found": boolean,
+      "anomalies": [
+        {{
+          "label": "string",
+          "coordinates": [ymin, xmin, ymax, xmax],
+          "visual_description": "What I see in the image at this location"
+        }}
+      ]
+    }}
+
+  agent: spatial_localizer
+
 
 reporting_task:
   description: >
-    Analyze the context of the "radiologist" agent you obtained and develop each topic into a complete section for the report. \
-    Make sure the report is detailed and contains any and all relevant information. \
-    Perform a technical analysis and return a possible pulmonary problem and what is the probability that this is the problem. \
-    Ex: pneumonia, pulmonary embolism, etc.
+    Review the JSON output from the 'radiologist' agent.
+
+    Follow these rules:
+
+    1. Do NOT reinterpret bounding box coordinates.
+    2. Base your reasoning strictly on the provided technical_description.
+    3. Expand into a formal medical radiology analysis.
+    4. Infer the most likely pulmonary condition.
+    5. Assign probability as an integer between 0 and 100.
+
+    OUTPUT RULES:
+    - Return ONLY valid JSON.
+    - No markdown.
+    - No explanations outside JSON.
+
   expected_output: >
-    Format your response in JSON with "Technical Analysis" (a detailed technical analysis of the X-ray), and "Possible Pulmonary Problem" (the most likely pulmonary \ problem based on the analysis) + "Probability" (the probability that this is the problem).
+    {{
+      "technical_analysis": "string",
+      "diagnosis": {
+        "condition": "string",
+        "probability_percentage": integer,
+        "justification": "string"
+      }
+    }}
+
   agent: reporting_analyst
+
 
 circle_radiography_task:
   description: >
-    Take the tool '''circle_the_anomaly''' and circle:
-    - lung problems mentioned
-    - spots
-    - secretions
+    Use the tool 'circle_the_anomaly' to draw red circles in the X-ray image.
 
-    If you can't find anything, stop there and say you didn't find anything.
-  
+    Image URL: {image_url}
+
+    Rules:
+
+    1. Extract the "anomalies" list from previous JSON.
+    2. For each anomaly:
+       - Read coordinates in the format:
+         [ymin, xmin, ymax, xmax]
+    3. Convert them directly to tool input format:
+       {{
+         "y1": ymin,
+         "x1": xmin,
+         "y2": ymax,
+         "x2": xmax
+       }}
+    4. Do NOT modify values.
+    5. Do NOT reinterpret scale.
+    6. If anomaly_found is false, return:
+       "No anomalies to draw"
+
+    Pass the list directly to the tool.
+
+    OUTPUT:
+    Only return the final file path string returned by the tool.
+
   expected_output: >
-    Return the image with the circles of the anomalies.
-  
+    Final image file path as string.
+
   agent: anomaly_analyst

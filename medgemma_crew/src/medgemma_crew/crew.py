@@ -3,16 +3,20 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 from pydantic import BaseModel
-from .tools.custom_tool import OpenAIImageTool, CircleTheAnomalyTool
+from .tools.custom_tool import OpenAIImageTool,CircleTheAnomalyTool
 
 # If you want to run a snippet of code before or after the crew starts,
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
 class AnomalyJson(BaseModel):
-    anomaly: bool
-    located: str
-    description: str
+    anomaly_found: bool
+    anomalies: list[dict]  # List of anomalies with their descriptions and coordinates
+    technical_description: str
+
+class LocalizationJson(BaseModel):
+    anomaly_found: bool # List of anatomical structures with their descriptions and coordinates
+    anomalies: list[dict]
 
 class RadiologyReport(BaseModel):
     pulmonary_problem: str
@@ -28,7 +32,7 @@ class MedgemmaCrew():
         api_key=".",
         base_url="http://localhost:8081",
         supports_function_calling=True,
-        temperature=0.7,
+        temperature=0.0,
     )
 
     agents: List[BaseAgent]
@@ -41,11 +45,19 @@ class MedgemmaCrew():
     # If you would like to add tools to your agents, you can learn more about it here:
     # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
-    def radiologist(self) -> Agent:
+    def image_interpreter(self) -> Agent:
         return Agent(
-            config=self.agents_config['radiologist'], # type: ignore[index]
+            config=self.agents_config['image_interpreter'], # type: ignore[index]
             verbose=True,
             # multimodal=True, # In case you want to use multimodal capabilities
+            llm=self.llm
+        )
+
+    @agent
+    def spatial_localizer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['spatial_localizer'], # type: ignore[index]
+            verbose=True,
             llm=self.llm
         )
 
@@ -62,25 +74,34 @@ class MedgemmaCrew():
         return Agent(
             config=self.agents_config['anomaly_analyst'], # type: ignore[index]
             verbose=True,
-            llm=self.llm
+            llm=self.llm,
+            allow_delegation=True,
         )
 
     # To learn more about structured task outputs,
     # task dependencies, and task callbacks, check out the documentation:
     # https://docs.crewai.com/concepts/tasks#overview-of-a-task
     @task
-    def radiology_task(self) -> Task:
+    def image_analysis_task(self) -> Task:
         return Task(
-            config=self.tasks_config['radiology_task'], # type: ignore[index]
+            config=self.tasks_config['image_analysis_task'], # type: ignore[index]
             tools=[OpenAIImageTool()],  # ✅ Adicione os parênteses para instanciar a ferramenta
-            output_pydantic=AnomalyJson, # ← This is how you specify that the output of this task should be parsed as JSON with a specific structure. The agent responsible for this task should return a JSON that matches the AnomalyJson model.
+            output_json=AnomalyJson, # ← This is how you specify that the output of this task should be parsed as JSON with a specific structure. The agent responsible for this task should return a JSON that matches the AnomalyJson model.
+        )
+
+    @task
+    def localization_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['localization_task'], # type: ignore[index]
+            tools=[OpenAIImageTool()],
+            output_json=LocalizationJson, # ← This is how you specify that the output of this task should be parsed as JSON with a specific structure. The agent responsible for this task should return a JSON that matches the LocalizationJson model.
         )
 
     @task
     def reporting_task(self) -> Task:
         return Task(
             config=self.tasks_config['reporting_task'], # type: ignore[index]
-            context=[self.radiology_task()],
+            context=[self.image_analysis_task()],
             output_json=RadiologyReport, # ← This is how you specify that the output of this task should be parsed as JSON with a specific structure. The agent responsible for this task should return a JSON that matches the RadiologyReport model.
         )
     
@@ -88,7 +109,7 @@ class MedgemmaCrew():
     def circle_radiography_task(self) -> Task:
         return Task(
             config=self.tasks_config["circle_radiography_task"], # type: ignore[index]
-            context=[self.radiology_task()],
+            context=[self.localization_task()],
             tools=[CircleTheAnomalyTool()],
         )
 
