@@ -1,17 +1,113 @@
-research_task:
+# Task 1: X-ray analysis with MedGemma
+xray_analysis_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
-  expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    Analyze the X-ray image at {image_url} using the 'xray_image_tool'.
 
-reporting_task:
-  description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Your analysis should include:
+
+    1. Identify visible pulmonary or thoracic anomalies
+    2. For each anomaly found, describe:
+       - Anatomical region (e.g., right mid-lung zone, left lower lobe)
+       - Relative position (upper/middle/lower, medial/lateral)
+       - Estimated size (small, medium, large)
+       - Visual characteristics (mild opacity, consolidation, nodular, etc.)
+    3. Evaluate visible normal structures (heart, mediastinum, diaphragm)
+    4. Technical quality of the image
+
+    RULES:
+    - Focus only on medical visual interpretation
+    - Be detailed in descriptions
+    - Return ONLY valid JSON
+
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    {{
+      "anomaly_found": boolean,
+      "anomalies": [
+        {{
+          "type": "string",
+          "anatomical_region": "string",
+          "position": "string",
+          "size": "string",
+          "visual_characteristics": "string",
+          "confidence": float
+        }}
+      ],
+      "normal_structures": "string",
+      "image_quality": "string",
+      "technical_description": "string"
+    }}
+
+  agent: xray_analyzer
+
+
+# Task 2: Medical report writing
+report_writing_task:
+  description: >
+    Based on the X-ray analysis provided by the previous agent, write a 
+    formal and complete radiology report.
+
+    The report should follow the standard structure:
+
+    1. TECHNIQUE: Briefly describe the type of exam
+    2. FINDINGS: List all relevant positive and negative findings
+    3. IMPRESSION: Provide the most likely diagnosis with probability
+    4. RECOMMENDATIONS: Suggest next steps if necessary
+
+    RULES:
+    - Use formal but clear medical language
+    - Base strictly on the provided data
+    - Assign probability as percentage (0-100)
+    - Return ONLY valid JSON
+
+  expected_output: >
+    {{
+      "technique": "string",
+      "findings": "string",
+      "impression": {{
+        "diagnosis": "string",
+        "probability_percentage": integer,
+        "differential_diagnosis": ["string"]
+      }},
+      "recommendations": "string",
+      "full_report": "string"
+    }}
+
+  agent: report_writer
+
+
+# Task 3: Circle anomaly and save image
+annotate_image_task:
+  description: >
+    Use the 'xray_anomaly_locator' tool to automatically locate and circle 
+    anomalies in the X-ray image.
+
+    Image: {image_url}
+
+    Instructions:
+    1. Execute the tool passing the image path
+    2. The tool will:
+       - Automatically detect pathologies using AI
+       - Circle anomaly regions on the original image
+       - Save the annotated image
+    3. Return the saved image path and detection information
+
+    IMPORTANT:
+    - The tool automatically detects: Pneumonia, Mass, Consolidation, 
+      Cardiomegaly, Edema, Effusion, Emphysema, Fibrosis, etc.
+    - If no significant anomaly is detected (probability < 60%), 
+      the tool will return anomaly_found: false
+
+  expected_output: >
+    {{
+      "annotated_image_path": "string",
+      "pathologies_detected": [
+        {{
+          "pathology": "string",
+          "probability": float
+        }}
+      ],
+      "anomaly_found": boolean
+    }}
+
+  agent: image_annotator
+

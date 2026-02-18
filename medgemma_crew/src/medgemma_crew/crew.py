@@ -2,71 +2,118 @@ from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
+from pydantic import BaseModel
+from .tools.custom_tool import OpenAIImageTool
+from .tools.xray_anomaly_locator import XRayAnomalyLocatorTool
+
+
+# Modelos de saída JSON
+class XRayAnalysisOutput(BaseModel):
+    anomaly_found: bool
+    anomalies: list[dict]
+    normal_structures: str
+    image_quality: str
+    technical_description: str
+
+
+class RadiologyReportOutput(BaseModel):
+    technique: str
+    findings: str
+    impression: dict
+    recommendations: str
+    full_report: str
+
+
+class AnnotatedImageOutput(BaseModel):
+    annotated_image_path: str
+    pathologies_detected: list[dict]
+    anomaly_found: bool
+
 
 @CrewBase
 class MedgemmaCrew():
-    """MedgemmaCrew crew"""
+    """MedgemmaCrew - Análise de Raio-X com 3 agentes"""
 
     llm = LLM(
-        model="openai/dale",
-        api_key="your_api_key_here",
-        base_url="http://localhost:8081"
+        model="ollama/thiagomoraes/medgemma-4b-it:Q8_0",
+        api_key="",
+        base_url="http://localhost:11434",
+        supports_function_calling=True,
+        temperature=0.0,
     )
 
     agents: List[BaseAgent]
     tasks: List[Task]
 
-    # Learn more about YAML configuration files here:
-    # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-    # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
+    # ==================== AGENTES ====================
     
-    # If you would like to add tools to your agents, you can learn more about it here:
-    # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
-    def researcher(self) -> Agent:
+    def xray_analyzer(self) -> Agent:
+        """Agente 1: Analisa o raio-x com MedGemma"""
         return Agent(
-            config=self.agents_config['researcher'], # type: ignore[index]
+            config=self.agents_config['xray_analyzer'],
             verbose=True,
-            llm=self.llm
+            llm=self.llm,
+            max_execution_time=600
         )
 
     @agent
-    def reporting_analyst(self) -> Agent:
+    def report_writer(self) -> Agent:
+        """Agente 2: Redige o relatório médico"""
         return Agent(
-            config=self.agents_config['reporting_analyst'], # type: ignore[index]
+            config=self.agents_config['report_writer'],
             verbose=True,
-            llm=self.llm
+            llm=self.llm,
+            max_execution_time=600
         )
 
-    # To learn more about structured task outputs,
-    # task dependencies, and task callbacks, check out the documentation:
-    # https://docs.crewai.com/concepts/tasks#overview-of-a-task
+    @agent
+    def image_annotator(self) -> Agent:
+        """Agente 3: Circula anomalias e salva imagem"""
+        return Agent(
+            config=self.agents_config['image_annotator'],
+            verbose=True,
+            llm=self.llm,
+            max_execution_time=900
+        )
+
+    # ==================== TASKS ====================
+    
     @task
-    def research_task(self) -> Task:
+    def xray_analysis_task(self) -> Task:
+        """Task 1: Análise do raio-x com MedGemma"""
         return Task(
-            config=self.tasks_config['research_task'], # type: ignore[index]
+            config=self.tasks_config['xray_analysis_task'],
+            tools=[OpenAIImageTool()],
+            output_json=XRayAnalysisOutput,
         )
 
     @task
-    def reporting_task(self) -> Task:
+    def report_writing_task(self) -> Task:
+        """Task 2: Redação do relatório médico"""
         return Task(
-            config=self.tasks_config['reporting_task'], # type: ignore[index]
-            output_file='report.md'
+            config=self.tasks_config['report_writing_task'],
+            context=[self.xray_analysis_task()],
+            output_json=RadiologyReportOutput,
         )
 
+    @task
+    def annotate_image_task(self) -> Task:
+        """Task 3: Circular anomalia e salvar imagem"""
+        return Task(
+            config=self.tasks_config['annotate_image_task'],
+            tools=[XRayAnomalyLocatorTool()],
+            output_json=AnnotatedImageOutput,
+        )
+
+    # ==================== CREW ====================
+    
     @crew
     def crew(self) -> Crew:
-        """Creates the MedgemmaCrew crew"""
-        # To learn how to add knowledge sources to your crew, check out the documentation:
-        # https://docs.crewai.com/concepts/knowledge#what-is-knowledge
-
+        """Cria o crew com os 3 agentes em sequência"""
         return Crew(
-            agents=self.agents, # Automatically created by the @agent decorator
-            tasks=self.tasks, # Automatically created by the @task decorator
+            agents=self.agents,
+            tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
-            # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
