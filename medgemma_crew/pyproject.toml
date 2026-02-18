@@ -6,7 +6,10 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "crewai[tools]>=0.165.1,<1.0.0",
+    "opencv-python>=4.13.0.92",
     "pillow>=12.1.1",
+    "torch>=2.10.0",
+    "transformers>=5.2.0",
 ]
 
 [project.scripts]

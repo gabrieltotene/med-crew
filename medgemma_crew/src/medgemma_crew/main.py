@@ -18,10 +18,11 @@ def run():
     Run the crew.
     """
 
-    img = "/home/lucas.abner/Documentos/code/med-crew/raio-x.jpeg"
+    img = "/home/lucas.abner/Documentos/code/med-crew/raio_3.png"
+    img2 = "C:\\Users\\asus\\Documents\\IA\\med-crew\\raio_4.png"
 
     inputs = {
-        'image_url': img
+        'image_url': img2
     }
     
     try:

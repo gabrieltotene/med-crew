@@ -1,158 +1,113 @@
-image_analysis_task:
+# Task 1: X-ray analysis with MedGemma
+xray_analysis_task:
   description: >
-    Analyze the X-ray image at {image_url} using 'openai_image_tool'.
+    Analyze the X-ray image at {image_url} using the 'xray_image_tool'.
 
-    Tasks:
+    Your analysis should include:
 
-    1. Identify visible pulmonary or thoracic anomalies.
-    2. For each anomaly, describe:
+    1. Identify visible pulmonary or thoracic anomalies
+    2. For each anomaly found, describe:
        - Anatomical region (e.g., right mid-lung zone, left lower lobe)
-       - Relative position (upper/middle/lower, medial/lateral, central/peripheral)
+       - Relative position (upper/middle/lower, medial/lateral)
        - Estimated size (small, medium, large)
-       - Visual density (mild opacity, consolidation, nodule-like, etc.)
+       - Visual characteristics (mild opacity, consolidation, nodular, etc.)
+    3. Evaluate visible normal structures (heart, mediastinum, diaphragm)
+    4. Technical quality of the image
 
-    IMPORTANT:
-    - Do NOT provide numeric coordinates.
-    - Do NOT estimate bounding boxes.
-    - Focus only on medical visual interpretation.
-
-    OUTPUT RULES:
-    - Return ONLY valid JSON.
-    - No explanations outside JSON.
-
-  expected_output: >
-    Return a JSON object with the following structure:
-    {{
-      "anomaly_found": boolean,
-      "anomalies": [
-        {
-          "label": "string",
-          "anatomical_region": "string",
-          "relative_position": "string",
-          "estimated_size": "string",
-          "visual_characteristics": "string",
-          "anomalies_here" : boolean,
-          "confidence": float
-        }
-      ],
-      "technical_description": "string"
-    }}
-
-  agent: image_interpreter
-
-localization_task:
-  description: >
-    Use 'xray_vision_tool' to VISUALLY INSPECT {image_url} and locate anomalies.
-    
-    **CRITICAL RADIOLOGICAL CONVENTION:**
-    - Chest X-rays are viewed as if facing the patient
-    - Patient's LEFT appears on the RIGHT side of the image
-    - Patient's RIGHT appears on the LEFT side of the image
-    - The "L" or "R" marker indicates PATIENT anatomy, not image sides
-    
-    **Your task:**
-    1. LOOK at the actual image using the tool
-    2. Find the visual anomaly (opacity, consolidation, nodule, etc.)
-    3. Measure its position in the image using this coordinate system:
-    
-    **Image Coordinate System (0-1000 scale):**
-    ```
-    Y-axis (vertical):          X-axis (horizontal):
-    0   = top of image          0    = left edge of image
-    250 = upper lung zones      300  = patient's RIGHT lung
-    500 = mid lung zones        500  = mediastinum/spine
-    750 = lower lung zones      700  = patient's LEFT lung  
-    1000= bottom of image       1000 = right edge of image
-    ```
-    
-    **Example coordinates:**
-    - Right upper lobe opacity: [200, 150, 400, 350]
-    - Left lower lobe consolidation: [600, 650, 850, 900]
-    - Central mediastinal mass: [300, 400, 600, 600]
-    
-    **IMPORTANT:**
-    - Bounding box should TIGHTLY fit the visible anomaly
-    - Small nodules: ~80-150 pixel range
-    - Medium opacities: ~200-350 pixel range
-    - Large consolidations: 400+ pixel range
-    
-    Return ONLY valid JSON. Coordinates must match what you SEE in the image.
+    RULES:
+    - Focus only on medical visual interpretation
+    - Be detailed in descriptions
+    - Return ONLY valid JSON
 
   expected_output: >
     {{
       "anomaly_found": boolean,
       "anomalies": [
         {{
-          "label": "string",
-          "coordinates": [ymin, xmin, ymax, xmax],
-          "visual_description": "What I see in the image at this location"
+          "type": "string",
+          "anatomical_region": "string",
+          "position": "string",
+          "size": "string",
+          "visual_characteristics": "string",
+          "confidence": float
         }}
-      ]
+      ],
+      "normal_structures": "string",
+      "image_quality": "string",
+      "technical_description": "string"
     }}
 
-  agent: spatial_localizer
+  agent: xray_analyzer
 
 
-reporting_task:
+# Task 2: Medical report writing
+report_writing_task:
   description: >
-    Review the JSON output from the 'radiologist' agent.
+    Based on the X-ray analysis provided by the previous agent, write a 
+    formal and complete radiology report.
 
-    Follow these rules:
+    The report should follow the standard structure:
 
-    1. Do NOT reinterpret bounding box coordinates.
-    2. Base your reasoning strictly on the provided technical_description.
-    3. Expand into a formal medical radiology analysis.
-    4. Infer the most likely pulmonary condition.
-    5. Assign probability as an integer between 0 and 100.
+    1. TECHNIQUE: Briefly describe the type of exam
+    2. FINDINGS: List all relevant positive and negative findings
+    3. IMPRESSION: Provide the most likely diagnosis with probability
+    4. RECOMMENDATIONS: Suggest next steps if necessary
 
-    OUTPUT RULES:
-    - Return ONLY valid JSON.
-    - No markdown.
-    - No explanations outside JSON.
+    RULES:
+    - Use formal but clear medical language
+    - Base strictly on the provided data
+    - Assign probability as percentage (0-100)
+    - Return ONLY valid JSON
 
   expected_output: >
     {{
-      "technical_analysis": "string",
-      "diagnosis": {
-        "condition": "string",
+      "technique": "string",
+      "findings": "string",
+      "impression": {{
+        "diagnosis": "string",
         "probability_percentage": integer,
-        "justification": "string"
-      }
+        "differential_diagnosis": ["string"]
+      }},
+      "recommendations": "string",
+      "full_report": "string"
     }}
 
-  agent: reporting_analyst
+  agent: report_writer
 
 
-circle_radiography_task:
+# Task 3: Circle anomaly and save image
+annotate_image_task:
   description: >
-    Use the tool 'circle_the_anomaly' to draw red circles in the X-ray image.
+    Use the 'xray_anomaly_locator' tool to automatically locate and circle 
+    anomalies in the X-ray image.
 
-    Image URL: {image_url}
+    Image: {image_url}
 
-    Rules:
+    Instructions:
+    1. Execute the tool passing the image path
+    2. The tool will:
+       - Automatically detect pathologies using AI
+       - Circle anomaly regions on the original image
+       - Save the annotated image
+    3. Return the saved image path and detection information
 
-    1. Extract the "anomalies" list from previous JSON.
-    2. For each anomaly:
-       - Read coordinates in the format:
-         [ymin, xmin, ymax, xmax]
-    3. Convert them directly to tool input format:
-       {{
-         "y1": ymin,
-         "x1": xmin,
-         "y2": ymax,
-         "x2": xmax
-       }}
-    4. Do NOT modify values.
-    5. Do NOT reinterpret scale.
-    6. If anomaly_found is false, return:
-       "No anomalies to draw"
-
-    Pass the list directly to the tool.
-
-    OUTPUT:
-    Only return the final file path string returned by the tool.
+    IMPORTANT:
+    - The tool automatically detects: Pneumonia, Mass, Consolidation, 
+      Cardiomegaly, Edema, Effusion, Emphysema, Fibrosis, etc.
+    - If no significant anomaly is detected (probability < 60%), 
+      the tool will return anomaly_found: false
 
   expected_output: >
-    Final image file path as string.
+    {{
+      "annotated_image_path": "string",
+      "pathologies_detected": [
+        {{
+          "pathology": "string",
+          "probability": float
+        }}
+      ],
+      "anomaly_found": boolean
+    }}
 
-  agent: anomaly_analyst
+  agent: image_annotator
+
