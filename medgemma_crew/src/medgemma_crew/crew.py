@@ -35,9 +35,9 @@ class MedgemmaCrew():
     """MedgemmaCrew - Análise de Raio-X com 3 agentes"""
 
     llm = LLM(
-        model="openai/dale",
-        api_key="your_api_key_here",
-        base_url="http://localhost:8081"
+        model="ollama/thiagomoraes/medgemma-4b-it:Q8_0",
+        api_key="",
+        base_url="http://localhost:11434"
     )
 
     agents: List[BaseAgent]
