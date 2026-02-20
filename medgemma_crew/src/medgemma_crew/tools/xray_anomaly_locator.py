@@ -120,7 +120,7 @@ class XRayAnomalyLocatorTool(BaseTool):
                 axes[1].set_title(f"Heatmap: {target_pathology}")
                 axes[1].axis("off")
                 plt.tight_layout()
-                heatmap_path = str(Path(__file__).parent / f"heatmap_{uuid.uuid4().hex[:8]}.png")
+                heatmap_path = str(Path(__file__).parent.parent / "outputs" / f"heatmap_{uuid.uuid4().hex[:8]}.png")
                 fig.savefig(heatmap_path, bbox_inches="tight")
                 plt.close(fig)
                 print(f"[XRayAnomalyLocatorTool] Heatmap salvo em {heatmap_path}")
@@ -208,8 +208,10 @@ class XRayAnomalyLocatorTool(BaseTool):
                 })
             
             # Salva
-            output_dir = Path(__file__).parent
-            output_path = str(output_dir / f"xray_circled_{uuid.uuid4().hex[:8]}.png")
+            output_dir = str(Path(__file__).parent.parent / "outputs")
+            print(f"[XRayAnomalyLocatorTool] Salvando imagem anotada em {output_dir}...")
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = f"{output_dir}/xray_circled_{uuid.uuid4().hex[:8]}.png"
             original_img.save(output_path)
             print(f"[XRayAnomalyLocatorTool] Imagem anotada salva em {output_path}")
             result = {
@@ -228,3 +230,9 @@ class XRayAnomalyLocatorTool(BaseTool):
             import traceback
             traceback.print_exc()
             return {"error": str(e)}
+        
+if __name__=="__main__":
+    tool = XRayAnomalyLocatorTool()
+
+    result = tool._run("/home/lucas.abner/Documentos/code/med-crew/raio_4.png", pathology="auto")
+    print(result)
