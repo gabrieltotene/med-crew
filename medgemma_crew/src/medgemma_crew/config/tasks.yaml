@@ -111,3 +111,76 @@ annotate_image_task:
 
   agent: image_annotator
 
+write_report_task:
+  description: >
+    Based on the previous X-ray analysis and the detected anomalies (including the annotated image), write a clear, concise, and comprehensive medical report.
+
+    The report MUST include:
+    1. Summary of findings (from the analysis)
+    2. Detailed description of the detected anomaly/anomalies, including location, type, size, and visual characteristics
+    3. Most likely diagnosis and differential diagnoses
+    4. Recommendations for further evaluation or treatment
+    5. Path to the original image, the annotated image and the heatmap image (with circles)
+    6. A visual comparison section describing the difference between the original and annotated images
+
+    RULES:
+    - Use clear, objective, and formal medical language
+    - Base the report strictly on the provided analysis and detected anomalies
+    - Include the image paths in the output JSON
+    - Return ONLY valid JSON
+
+  expected_output: >
+    {{
+      "summary": "string",
+      "anomaly_description": "string",
+      "diagnosis": {{
+        "main": "string",
+        "differential": ["string"]
+      }},
+      "recommendations": "string",
+      "original_image_path": "string",
+      "annotated_image_path": "string",
+      "heatmap_image_path": "string",
+      "visual_comparison": "string"
+    }}
+
+  agent: redator
+  context:
+    - report_writing_task
+    - annotate_image_task
+
+show_report_docx:
+  description: >
+    Convert the final report (in JSON format) into a well-structured DOCX document using the tool "write_docx_tool".
+
+    Instructions:
+    1. Take the final report JSON output from the previous task
+    2. Create a DOCX document with the following structure:
+       - Title: "Radiology Report"
+       - Sections:
+         - Summary
+         - Anomaly Description
+         - Diagnosis (Main and Differential)
+         - Recommendations
+         - Image Paths (heatmap_image_path, annotated_image_path images)
+           *!IMPORTANT: The markdown tag '![alt text](url)' MUST be placed on a completely new, empty line below its description.*
+         - Visual Comparison
+    3. Format the document for clarity and professionalism
+
+    RULES:
+    - Use clear formatting (headings, bullet points, etc.)
+    - Include all relevant information from the JSON report
+    - Return the path to the generated DOCX file
+    - Use '#' for headings (e.g., '# Title', '## Subtitle')
+    - Use '![alt text](url)' for inserting images.
+
+  expected_output: >
+    Return the path to the generated DOCX file in the following JSON format:
+    {{
+      "sucess": boolean
+      "docx_path": "string",
+    }}
+
+  agent: report_writer
+  context:
+    - write_report_task

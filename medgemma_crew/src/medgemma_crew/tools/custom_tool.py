@@ -58,7 +58,7 @@ class OpenAIImageTool(BaseTool):
         url = "http://localhost:11434/v1/chat/completions"
 
         payload = {
-            "model": "thiagomoraes/medgemma-4b-it:Q8_0",
+            "model": "thiagomoraes/medgemma-1.5-4b-it:Q8_0",
             "messages": messages,
             "max_tokens": 1000,
             "temperature": 0.0
