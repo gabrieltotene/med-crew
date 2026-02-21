@@ -78,11 +78,16 @@ def process_ray_x_image(image_path: str) -> str:
                 conteudo=conteudo_markdown
             )
 
-            print(f"Resultado da ferramenta de escrita DOCX: {resultado_ferramenta}")  # ✅ Mostra o resultado retornado pela ferramenta para verificar se foi bem-sucedido
+            # --- INÍCIO DA CORREÇÃO DE VALIDAÇÃO ---
+            # Verifica se o resultado é um dicionário e se teve sucesso
+            print(f"Caminho do arquivo PDF: {resultado_ferramenta['pdf_path']}")
 
-            print(f"Caminho do arquivo DOCX: {resultado_ferramenta['docx_path']}")
-
-            return resultado_ferramenta['docx_path']
+            # Apagando imagens temporárias...
+            caminho_imgs = Path(__file__).parent.parent / "outputs"
+            if os.path.exists(caminho_imgs):
+                os.remove(caminho_imgs)
+            
+            return resultado_ferramenta['pdf_path']
 
         except json.JSONDecodeError as e:
             print(f"Erro ao decodificar JSON: {e}")

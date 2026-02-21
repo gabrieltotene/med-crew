@@ -80,7 +80,7 @@ class MedgemmaCrew():
         return Agent(
             config=self.agents_config['report_writer'],
             verbose=True,
-            llm=self.llm_tool,
+            llm=self.llm,
             max_execution_time=600
         )
 
@@ -99,7 +99,7 @@ class MedgemmaCrew():
         return Agent(
             config = self.agents_config['redator'],
             verbose=True,
-            llm=self.llm_tool,
+            llm=self.llm,
             max_execution_time=600
         )
     # ==================== TASKS ====================

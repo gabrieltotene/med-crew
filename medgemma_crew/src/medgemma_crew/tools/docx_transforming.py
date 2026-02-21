@@ -1,11 +1,13 @@
 import os
 import re
 import requests
+import pythoncom  # <-- ADICIONE ESTA LINHA
 from io import BytesIO
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from docx import Document
-from docx.shared import Inches # Usado para controlar o tamanho da imagem
+from docx.shared import Inches
+from docx2pdf import convert
 
 class EscreverDocxInput(BaseModel):
     caminho_ficheiro: str = Field(..., description="The name of the .docx file (e.g., 'report.docx').")
@@ -23,10 +25,8 @@ class FerramentaEscreverDocx(BaseTool):
 
     def _run(self, caminho_ficheiro: str, conteudo: str) -> str:
         try:
-            if os.path.exists(caminho_ficheiro):
-                doc = Document(caminho_ficheiro)
-            else:
-                doc = Document()
+            
+            doc = Document()
             
             linhas = conteudo.split('\n')
             
@@ -78,11 +78,22 @@ class FerramentaEscreverDocx(BaseTool):
                     doc.add_paragraph(linha_limpa)
             
             doc.save(caminho_ficheiro)
-            print(f"Arquivo '{caminho_ficheiro}' salvo com sucesso.")
+            pdf_path = caminho_ficheiro.replace(".docx", ".pdf")
+            
+            # --- INÍCIO DA CORREÇÃO PARA O WINDOWS COM ---
+            pythoncom.CoInitialize() # Inicializa o COM para esta thread
+            try:
+                convert(caminho_ficheiro, pdf_path)
+            finally:
+                pythoncom.CoUninitialize() # Libera os recursos (boa prática)
+            # --- FIM DA CORREÇÃO ---
+
+            print(f"Arquivo '{pdf_path}' salvo com sucesso.")
             return {
-                "sucsess": True,
-                "docx_path": caminho_ficheiro
+                "success": True,
+                "pdf_path": pdf_path
             }
         
         except Exception as e:
-            return f"Erro ao tentar salvar o arquivo DOCX: {str(e)}"
+            # Retornar o erro como dicionário também ajuda a padronizar!
+            return {"success": False, "error": f"Erro ao tentar salvar/converter o DOCX: {str(e)}"}
