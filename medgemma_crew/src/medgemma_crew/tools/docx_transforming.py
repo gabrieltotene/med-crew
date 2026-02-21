@@ -54,10 +54,10 @@ class FerramentaEscreverDocx(BaseTool):
                             resposta = requests.get(caminho_imagem)
                             resposta.raise_for_status()
                             imagem_stream = BytesIO(resposta.content)
-                            doc.add_picture(imagem_stream, width=Inches(5.0))
+                            doc.add_picture(imagem_stream, width=Inches(5.0), height=Inches(3.0))
                         else:
                             if os.path.exists(caminho_imagem):
-                                doc.add_picture(caminho_imagem, width=Inches(5.0))
+                                doc.add_picture(caminho_imagem, width=Inches(5.0), height=Inches(3.0))
                             else:
                                 doc.add_paragraph(f"[Aviso: Imagem local não encontrada em: {caminho_imagem}]")
                     except Exception as e:
@@ -79,7 +79,10 @@ class FerramentaEscreverDocx(BaseTool):
             
             doc.save(caminho_ficheiro)
             print(f"Arquivo '{caminho_ficheiro}' salvo com sucesso.")
-            return f"Sucesso! O arquivo '{caminho_ficheiro}' foi salvo com texto, títulos e imagens."
+            return {
+                "sucsess": True,
+                "docx_path": caminho_ficheiro
+            }
         
         except Exception as e:
             return f"Erro ao tentar salvar o arquivo DOCX: {str(e)}"
