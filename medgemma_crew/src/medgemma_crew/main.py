@@ -26,6 +26,6 @@ def run(img):
     }
     
     try:
-        MedgemmaCrew().crew().kickoff(inputs=inputs)
+        return MedgemmaCrew().crew().kickoff(inputs=inputs)
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
