@@ -77,6 +77,8 @@ def process_ray_x_image(image_path: str) -> str:
                 caminho_ficheiro=caminho_docx, 
                 conteudo=conteudo_markdown
             )
+            print("\n=== RESULTADO DA FERRAMENTA ===")
+            print(resultado_ferramenta)
 
             # --- INÍCIO DA CORREÇÃO DE VALIDAÇÃO ---
             # Verifica se o resultado é um dicionário e se teve sucesso
@@ -84,6 +86,7 @@ def process_ray_x_image(image_path: str) -> str:
 
             # Apagando imagens temporárias...
             caminho_imgs = Path(__file__).parent.parent / "outputs"
+            print(f"Caminho da pasta de imagens temporárias: {caminho_imgs}")
             if os.path.exists(caminho_imgs):
                 os.remove(caminho_imgs)
             
@@ -101,7 +104,7 @@ def process_ray_x_image(image_path: str) -> str:
 interface = Interface(
     fn=process_ray_x_image, 
     inputs=[Image(type="filepath")], 
-    outputs=[File(label="Relatório Médico em DOCX", file_types=[".docx"])], 
+    outputs=[File(label="Relatório Médico em pdf", type="filepath")], 
     title="Medgemma Crew", 
     flagging_dir=Path(__file__).parent / "logs"
 )
