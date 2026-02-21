@@ -5,7 +5,8 @@ from io import BytesIO
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from docx import Document
-from docx.shared import Inches # Usado para controlar o tamanho da imagem
+from docx.shared import Inches
+from docx2pdf import convert
 
 class EscreverDocxInput(BaseModel):
     caminho_ficheiro: str = Field(..., description="The name of the .docx file (e.g., 'report.docx').")
@@ -23,10 +24,8 @@ class FerramentaEscreverDocx(BaseTool):
 
     def _run(self, caminho_ficheiro: str, conteudo: str) -> str:
         try:
-            if os.path.exists(caminho_ficheiro):
-                doc = Document(caminho_ficheiro)
-            else:
-                doc = Document()
+            
+            doc = Document()
             
             linhas = conteudo.split('\n')
             
@@ -54,10 +53,10 @@ class FerramentaEscreverDocx(BaseTool):
                             resposta = requests.get(caminho_imagem)
                             resposta.raise_for_status()
                             imagem_stream = BytesIO(resposta.content)
-                            doc.add_picture(imagem_stream, width=Inches(5.0))
+                            doc.add_picture(imagem_stream, width=Inches(5.0), height=Inches(3.0))
                         else:
                             if os.path.exists(caminho_imagem):
-                                doc.add_picture(caminho_imagem, width=Inches(5.0))
+                                doc.add_picture(caminho_imagem, width=Inches(5.0), height=Inches(3.0))
                             else:
                                 doc.add_paragraph(f"[Aviso: Imagem local não encontrada em: {caminho_imagem}]")
                     except Exception as e:
@@ -78,8 +77,34 @@ class FerramentaEscreverDocx(BaseTool):
                     doc.add_paragraph(linha_limpa)
             
             doc.save(caminho_ficheiro)
-            print(f"Arquivo '{caminho_ficheiro}' salvo com sucesso.")
-            return f"Sucesso! O arquivo '{caminho_ficheiro}' foi salvo com texto, títulos e imagens."
+            pdf_path = caminho_ficheiro.replace(".docx", ".pdf")
+            
+            # --- INÍCIO DA CORREÇÃO PARA O WINDOWS COM ---
+            try:
+                import pythoncom  # <-- ADICIONE ESTA LINHA
+                pythoncom.CoInitialize() # Inicializa o COM para esta thread
+                convert(caminho_ficheiro, pdf_path)
+                pythoncom.CoUninitialize() # Libera os recursos (boa prática)
+            except:
+                # Tenta converter normalmente (para Linux/Mac)
+                import subprocess
+
+                subprocess.run([
+                    "libreoffice",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    caminho_ficheiro
+                ])
+                            
+            # --- FIM DA CORREÇÃO ---
+
+            print(f"Arquivo '{pdf_path}' salvo com sucesso.")
+            return {
+                "success": True,
+                "pdf_path": pdf_path
+            }
         
         except Exception as e:
-            return f"Erro ao tentar salvar o arquivo DOCX: {str(e)}"
+            # Retornar o erro como dicionário também ajuda a padronizar!
+            return {"success": False, "error": f"Erro ao tentar salvar/converter o DOCX: {str(e)}"}

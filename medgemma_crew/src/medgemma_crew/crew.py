@@ -26,6 +26,7 @@ class RadiologyReportOutput(BaseModel):
 
 
 class AnnotatedImageOutput(BaseModel):
+    heatmap_image_path: str
     annotated_image_path: str
     pathologies_detected: list[dict]
     anomaly_found: bool
@@ -35,7 +36,7 @@ class FinalReportOutput(BaseModel):
     anomaly_description: str
     diagnosis: dict
     recommendations: str
-    original_image_path: str
+    heatmap_image_path: str
     annotated_image_path: str
     visual_comparison: str
 
@@ -98,7 +99,7 @@ class MedgemmaCrew():
         return Agent(
             config = self.agents_config['redator'],
             verbose=True,
-            llm=self.llm_tool,
+            llm=self.llm,
             max_execution_time=600
         )
     # ==================== TASKS ====================
@@ -138,16 +139,16 @@ class MedgemmaCrew():
             config=self.tasks_config['write_report_task'],
             context=[self.xray_analysis_task(), self.annotate_image_task()],
             output_json=FinalReportOutput,
-            markdown_output=True
+            markdown=True,
         )
     
-    @task
-    def show_report_docx(self) -> Task:
-        return Task(
-            config=self.tasks_config['show_report_docx'],
-            tools=[FerramentaEscreverDocx()],
-            context=[self.write_report_task()],
-        )
+    # @task
+    # def show_report_docx(self) -> Task:
+    #     return Task(
+    #         config=self.tasks_config['show_report_docx'],
+    #         tools=[FerramentaEscreverDocx()],
+    #         context=[self.write_report_task()],
+    #     )
 
     # ==================== CREW ====================
     

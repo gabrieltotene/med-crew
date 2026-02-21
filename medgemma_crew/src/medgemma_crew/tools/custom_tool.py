@@ -60,7 +60,7 @@ class OpenAIImageTool(BaseTool):
         payload = {
             "model": "thiagomoraes/medgemma-1.5-4b-it:Q8_0",
             "messages": messages,
-            "max_tokens": 1000,
+            "max_tokens": 1500,
             "temperature": 0.0
         }
 
