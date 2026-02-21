@@ -1,7 +1,6 @@
 import os
 import re
 import requests
-import pythoncom  # <-- ADICIONE ESTA LINHA
 from io import BytesIO
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -81,11 +80,23 @@ class FerramentaEscreverDocx(BaseTool):
             pdf_path = caminho_ficheiro.replace(".docx", ".pdf")
             
             # --- INÍCIO DA CORREÇÃO PARA O WINDOWS COM ---
-            pythoncom.CoInitialize() # Inicializa o COM para esta thread
             try:
+                import pythoncom  # <-- ADICIONE ESTA LINHA
+                pythoncom.CoInitialize() # Inicializa o COM para esta thread
                 convert(caminho_ficheiro, pdf_path)
-            finally:
                 pythoncom.CoUninitialize() # Libera os recursos (boa prática)
+            except:
+                # Tenta converter normalmente (para Linux/Mac)
+                import subprocess
+
+                subprocess.run([
+                    "libreoffice",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    caminho_ficheiro
+                ])
+                            
             # --- FIM DA CORREÇÃO ---
 
             print(f"Arquivo '{pdf_path}' salvo com sucesso.")
