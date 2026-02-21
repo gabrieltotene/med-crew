@@ -99,6 +99,7 @@ annotate_image_task:
 
   expected_output: >
     {{
+      "heatmap_image_path": "string",
       "annotated_image_path": "string",
       "pathologies_detected": [
         {{
@@ -138,7 +139,6 @@ write_report_task:
         "differential": ["string"]
       }},
       "recommendations": "string",
-      "original_image_path": "string",
       "annotated_image_path": "string",
       "heatmap_image_path": "string",
       "visual_comparison": "string"
@@ -149,38 +149,23 @@ write_report_task:
     - report_writing_task
     - annotate_image_task
 
-show_report_docx:
-  description: >
-    Convert the final report (in JSON format) into a well-structured DOCX document using the tool "write_docx_tool".
+# show_report_docx:
+#   description: >
+#     You MUST use the tool "write_docx_tool" to create the DOCX file.
+#     DO NOT invent, guess, or hallucinate the file path. You cannot complete this task without calling the tool.
 
-    Instructions:
-    1. Take the final report JSON output from the previous task
-    2. Create a DOCX document with the following structure:
-       - Title: "Radiology Report"
-       - Sections:
-         - Summary
-         - Anomaly Description
-         - Diagnosis (Main and Differential)
-         - Recommendations
-         - Image Paths (heatmap_image_path, annotated_image_path images)
-           *!IMPORTANT: The markdown tag '![alt text](url)' MUST be placed on a completely new, empty line below its description.*
-         - Visual Comparison
-    3. Format the document for clarity and professionalism
+#     Instructions:
+#     1. Take the final report JSON output from the previous task.
+#     2. Call the "write_docx_tool" passing the necessary data.
+#     3. WAIT for the tool to execute and return the real absolute file path.
+#     4. Only after the tool returns the path, create your final response.
 
-    RULES:
-    - Use clear formatting (headings, bullet points, etc.)
-    - Include all relevant information from the JSON report
-    - Return the path to the generated DOCX file
-    - Use '#' for headings (e.g., '# Title', '## Subtitle')
-    - Use '![alt text](url)' for inserting images.
+#   expected_output: >
+#     Return the exact path provided by the tool in the following JSON format:
+#     {{
+#       "docx_path": "the_absolute_file_path_returned_by_the_tool",
+#     }}
 
-  expected_output: >
-    Return the path to the generated DOCX file in the following JSON format:
-    {{
-      "sucess": boolean
-      "docx_path": "string",
-    }}
-
-  agent: report_writer
-  context:
-    - write_report_task
+#   agent: report_writer
+#   context:
+#     - write_report_task
