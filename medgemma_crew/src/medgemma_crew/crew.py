@@ -5,7 +5,6 @@ from typing import List
 from pydantic import BaseModel
 from .tools.custom_tool import OpenAIImageTool
 from .tools.xray_anomaly_locator import XRayAnomalyLocatorTool
-from .tools.docx_transforming import FerramentaEscreverDocx
 
 
 # Modelos de saída JSON
