@@ -18,6 +18,8 @@ xray_analysis_task:
     - Focus only on medical visual interpretation
     - Be detailed in descriptions
     - Return ONLY valid JSON
+    - Use strict RFC8259 JSON (double quotes only, no trailing commas)
+    - Use lowercase JSON literals only: true, false, null
 
   expected_output: >
     {{
@@ -58,6 +60,8 @@ report_writing_task:
     - Base strictly on the provided data
     - Assign probability as percentage (0-100)
     - Return ONLY valid JSON
+    - Use strict RFC8259 JSON (double quotes only, no trailing commas)
+    - Use lowercase JSON literals only: true, false, null
 
   expected_output: >
     {{
@@ -96,6 +100,8 @@ annotate_image_task:
       Cardiomegaly, Edema, Effusion, Emphysema, Fibrosis, etc.
     - If no significant anomaly is detected (probability < 60%), 
       the tool will return anomaly_found: false
+    - Return strict RFC8259 JSON only (double quotes, no trailing commas)
+    - Use lowercase JSON literals only: true, false, null
 
   expected_output: >
     {{
@@ -129,6 +135,8 @@ write_report_task:
     - Base the report strictly on the provided analysis and detected anomalies
     - Include the image paths in the output JSON
     - Return ONLY valid JSON
+    - Use strict RFC8259 JSON (double quotes only, no trailing commas)
+    - Use lowercase JSON literals only: true, false, null
 
   expected_output: >
     {{
