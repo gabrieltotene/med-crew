@@ -85,10 +85,16 @@ def process_ray_x_image(image_path: str) -> str:
             print(f"Caminho do arquivo PDF: {resultado_ferramenta['pdf_path']}")
 
             # Apagando imagens temporárias...
-            caminho_imgs = Path(__file__).parent.parent / "outputs"
+            caminho_output = Path(__file__).parent.parent
+            caminho_imgs = os.path.join(caminho_output, "medgemma_crew/outputs")
             print(f"Caminho da pasta de imagens temporárias: {caminho_imgs}")
             if os.path.exists(caminho_imgs):
-                os.remove(caminho_imgs)
+                items =os.listdir(caminho_imgs)
+                for item in items:
+                    item_path = os.path.join(caminho_imgs, item)
+                    if os.path.isfile(item_path):
+                        os.remove(item_path)
+                print(f"Imagens temporárias removidas da pasta: {caminho_imgs}")
             
             return resultado_ferramenta['pdf_path']
 
