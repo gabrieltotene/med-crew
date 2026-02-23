@@ -1,16 +1,55 @@
-# med-crew
+# 🩺 MedGemma Crew: Multi-Agent System for Radiological Analysis
 
-Agentic medical assistant that helps healthcare technicians analyze chest X-ray images and generate a structured radiology report with annotated outputs.
+This project represents an advanced application of Generative AI and Computer Vision in healthcare. The system leverages the CrewAI library to orchestrate specialized agents that analyze chest X-ray images, generate technical diagnoses, and produce formal medical reports.
 
-## What this project does
+## 🚀 Architecture Overview
 
-This project uses a multi-agent workflow (CrewAI) to:
-- Analyze a chest X-ray image
-- Detect possible anomalies
-- Generate visual outputs (annotated image + heatmap)
-- Produce a final medical report and export it to PDF
+The ecosystem is divided into three fundamental pillars:
 
-The user interface is a Gradio web app where you upload an X-ray image and download the generated report.
+- **Vision and Detection:** Integration of the MedGemma-1.5-4b model (via Ollama) for textual analysis and TorchXRayVision for spatial localization.
+- **Agent Orchestration:** Workflow that separates responsibilities among visual analysis, report writing, and image annotation.
+- **Interface and Delivery:** Gradio frontend for image upload and automation tools for generating .docx and .pdf documents.
+
+## 🛠️ Component Details
+
+### 1. Agents
+
+The project defines a multidisciplinary digital team based on specific roles:
+
+- **X-ray Analyzer:** Acts as a senior radiologist, identifying anomalies and anatomical features.
+- **Report Writer:** Specialist in medical documentation, transforming technical data into structured reports.
+- **Image Annotator:** Image processing expert, responsible for visually marking pathologies.
+- **Medical Writer:** Consolidates all analyses and file paths into a concise final report.
+
+### 2. Custom Tools
+
+These tools enable agents to interact with the external world and process data:
+
+- **OpenAIImageTool:** Manages communication with the local MedGemma model, encoding images in Base64 for API analysis.
+- **XRayAnomalyLocatorTool:** Uses the DenseNet121 model to predict pathologies and generates gradient-based heatmaps to locate anomalies.
+- **FerramentaEscreverDocx:** Processes Markdown content, dynamically inserts images, and converts the result to PDF.
+
+### 3. The Role of MedGemma
+
+The MedGemma model is the clinical intelligence engine of the project. During testing and implementation, it excelled at:
+
+- Identifying specific anatomical regions (e.g., left lower lobe, mediastinum).
+- Assessing the technical quality of the image and describing visual features such as opacities and consolidations.
+- Providing detailed descriptions that serve as the basis for differential diagnosis.
+
+## 📈 Execution Pipeline
+
+1. **Input:** The user uploads the image via the Gradio interface.
+2. **Analysis:** The xray_analyzer agent uses the image tool to obtain MedGemma's technical description.
+3. **Localization:** The image_annotator generates the heatmap and the circled image with detected anomalies.
+4. **Writing:** The report_writer generates the formal report in technical format.
+5. **File Generation:** The system compiles the final Markdown (including generated images) into a PDF ready for download.
+
+## 🔍 Technical Differentials
+
+- **Data Robustness:** The use of RobustConverter ensures that, even if the language model generates out-of-format responses, the system attempts to recover valid JSON to maintain workflow continuity.
+- **Hybrid Analysis:** Combines generative AI (MedGemma) for qualitative description with discriminative AI (TorchXRayVision) for quantitative and spatial validation.
+- **Resource Management:** The system includes cleanup routines to delete temporary output images after process completion, preventing file accumulation on the server.
 
 ## Requirements
 
